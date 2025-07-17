@@ -1,0 +1,9 @@
+[package]
+name = "langpipe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+downcast-rs = "2.0.1"
+semver = "1.0.26"
+serde = "1.0.219"
