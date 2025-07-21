@@ -276,7 +276,7 @@ impl Parser for StackParser {
                 body.push(StackInstruction::BinaryOp(token.value.clone()));
             } else if token.value == "return" {
                 body.push(StackInstruction::Return);
-                pos += 1;
+                // pos += 1;
                 break;
             } else {
                 return Err(Diagnostic {

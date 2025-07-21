@@ -71,7 +71,6 @@ impl IrType for TokenIr {
             });
         }
         Ok(())
-        // todo!("More sophisticated validation?")
     }
 }
 
@@ -229,13 +228,29 @@ impl Pipeline {
             irs: HashMap::new(),
             diagnostics: vec![],
         };
+        let mut err_encountered = false;
         for stage in &self.stages {
             if let Err(diag) = stage.execute(&mut ctx) {
                 println!("{:?}", diag);
+                match &diag.severity {
+                    Severity::Error => {
+                        err_encountered = true;
+                    }
+                    _ => {}
+                }
                 ctx.diagnostics.push(diag);
-                // continue or abort based on severity
             }
         }
-        Ok(ctx)
+
+        if err_encountered {
+            Err(Diagnostic {
+                severity: Severity::Error,
+                message: "One or more errors encountered, aborting compilation".to_string(),
+                location: None,
+                hints: vec![],
+            })
+        } else {
+            Ok(ctx)
+        }
     }
 }
