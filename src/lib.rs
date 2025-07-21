@@ -1,7 +1,4 @@
-use std::{
-    any::{Any, TypeId},
-    collections::HashMap,
-};
+use std::collections::HashMap;
 
 use downcast_rs::Downcast;
 

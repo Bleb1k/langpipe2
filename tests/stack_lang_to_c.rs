@@ -1,4 +1,3 @@
-use downcast_rs::Downcast;
 use langpipe::{
     AnyIrType, CodeGenerator, CodegenStage, Diagnostic, IrTransformStage, IrTransformer, IrType,
     Lexer, LexerStage, Parser, ParserStage, Pipeline, Result, Severity, SourceLocation, Token,
@@ -318,7 +317,11 @@ impl IrTransformer for StackToCAstTransformer {
         for instr in &stack_ast.body {
             match instr {
                 StackInstruction::Push(var) => {
-                    expr_stack.push(Expression::Variable(var.clone()));
+                    expr_stack.push(if let Ok(_) = var.parse::<i64>() {
+                        Expression::Literal(var.clone())
+                    } else {
+                        Expression::Variable(var.clone())
+                    });
                 }
                 StackInstruction::BinaryOp(op) => {
                     if expr_stack.len() < 2 {
@@ -404,59 +407,9 @@ fn expr_to_str(expr: &Expression) -> String {
     }
 }
 
-#[derive(Default)]
-struct CompilationOptions {
-    target: String,
-    // Add more options here as needed (e.g. --optimize, --output, etc.)
-}
-
-impl CompilationOptions {
-    fn from(args: &[String]) -> Result<CompilationOptions> {
-        let mut options = CompilationOptions {
-            target: "c".to_string(),
-        };
-        let mut i = 0;
-
-        while i < args.len() {
-            match args[i].as_str() {
-                "-target" => {
-                    if i + 1 >= args.len() {
-                        return Err(Diagnostic {
-                            severity: Severity::Error,
-                            message: format!(
-                                "Expected one of {:?} after -target",
-                                vec!["c".to_string()]
-                            ),
-                            location: None,
-                            hints: vec!["Usage: -target <name>".to_string()],
-                        });
-                    }
-                    options.target = args[i + 1].clone();
-                    i += 2;
-                }
-                arg => {
-                    return Err(Diagnostic {
-                        severity: Severity::Error,
-                        message: format!("Unknown argument: {}", arg),
-                        location: None,
-                        hints: vec!["Valid arguments: -target <name>".to_string()],
-                    });
-                }
-            }
-        }
-
-        Ok(options)
-    }
-}
-
-fn main() -> Result<()> {
-    let args: Vec<String> = std::env::args().collect();
-    let options = match CompilationOptions::from(&args[1..]) {
-        Ok(val) => val,
-        Err(e) => return Err(e),
-    };
-
-    let mut pipeline = Pipeline {
+#[test]
+fn test() -> Result<()> {
+    let pipeline = Pipeline {
         stages: vec![
             Box::new(LexerStage {
                 lexer: Box::new(MyLexer),
@@ -464,35 +417,22 @@ fn main() -> Result<()> {
             Box::new(ParserStage {
                 parser: Box::new(StackParser),
             }),
-        ],
-    };
-
-    match options.target.as_str() {
-        "c" => {
-            pipeline.stages.push(Box::new(IrTransformStage {
+            Box::new(IrTransformStage {
                 transformer: Box::new(StackToCAstTransformer),
                 input_key: "ast".to_string(),
                 output_key: "c_ast".to_string(),
-            }));
-            pipeline.stages.push(Box::new(CodegenStage {
+            }),
+            Box::new(CodegenStage {
                 codegen: Box::new(CCodeGenerator),
                 input_key: "c_ast".to_string(),
                 output_key: "c_code".to_string(),
-            }));
-        }
-        v => {
-            return Err(Diagnostic {
-                severity: Severity::Error,
-                message: format!("Target {v} is unknown"),
-                location: None,
-                hints: vec![],
-            });
-        }
-    }
+            }),
+        ],
+    };
 
     let source = r#"
         int add(int a b) {
-            a b + return
+            a a b + + b + 1 2 + + return
         }
     "#;
 
