@@ -3,5 +3,12 @@ name = "langpipe"
 version = "0.1.0"
 edition = "2024"
 
+description = "A flexible Rust library for building custom compilers and interpreters with a modular pipeline for lexing, parsing, transforming, optimizing, and generating code."
+homepage = "https://github.com/Bleb1k/langpipe2"
+repository = "https://github.com/Bleb1k/langpipe2"
+license = "MIT"
+keywords = ["bytecode-compiler", "compilers", "lexing", "parsing", "codegen"]
+categories = ["parsing", "compilers"]
+
 [dependencies]
 downcast-rs = "2.0.1"
